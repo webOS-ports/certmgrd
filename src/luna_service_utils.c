@@ -122,6 +122,20 @@ char* luna_service_message_get_string(jvalue_ref parsed_obj, const char *name, c
 	return g_strdup(string_buf.m_str);
 }
 
+int luna_service_message_get_int(jvalue_ref parsed_obj, const char *name, int default_value)
+{
+	jvalue_ref int_obj = NULL;
+	int value = 0;
+
+	if (!jobject_get_exists(parsed_obj, j_str_to_buffer(name, strlen(name)), &int_obj) ||
+		!jis_number(int_obj))
+		return default_value;
+
+	jnumber_get_i32(int_obj, &value);
+
+	return value;
+}
+
 bool luna_service_message_validate_and_send(LSHandle *handle, LSMessage *message, jvalue_ref reply_obj)
 {
 	jschema_ref response_schema = NULL;
