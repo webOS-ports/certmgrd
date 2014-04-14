@@ -1,0 +1,12 @@
+[Unit]
+Description=Certificate Management Service
+Requires=ls-hubd_private.service ls-hubd_public.service
+After=ls-hubd_private.service ls-hubd_public.service
+
+[Service]
+Type=simple
+Restart=on-failure
+ExecStart=/usr/sbin/certmgrd
+
+[Install]
+WantedBy=multi-user.target
