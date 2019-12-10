@@ -280,7 +280,7 @@ struct certmgr_service* certmgr_service_create()
 
 	LSErrorInit(&error);
 
-	if (!LSRegisterPubPriv("org.webosports.certmgr", &service->handle, false, &error)) {
+	if (!LSRegister("org.webosports.service.certmgr", &service->handle, &error)) {
 		g_warning("Failed to register the luna service: %s", error.message);
 		LSErrorFree(&error);
 		goto error;

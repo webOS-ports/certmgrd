@@ -1,0 +1,8 @@
+{
+    "applications": [
+        "org.webosports.service.certmgrd/listAll",
+        "org.webosports.service.certmgrd/install",
+        "org.webosports.service.certmgrd/remove"
+    ]
+}
+
