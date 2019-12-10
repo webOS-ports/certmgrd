@@ -1,4 +1,4 @@
 [D-BUS Service]
-Name=org.webosports.certmgr
+Name=org.webosports.service.certmgr
 Exec=@WEBOS_INSTALL_SBINDIR@/certmgrd
 Type=static
