@@ -1,0 +1,12 @@
+{
+    "exeName":"@WEBOS_INSTALL_SBINDIR@/certmgrd",
+    "type": "privileged",
+    "allowedNames": ["org.webosports.service.certmgr"],
+    "permissions": [
+        {
+            "service":"org.webosports.service.certmgr",
+            "inbound":["*"],
+            "outbound":["*"]
+        }
+    ]
+}
