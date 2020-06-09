@@ -1,0 +1,10 @@
+{
+    "org.webosports.service.certmgr": [ 
+        "applications",
+        "applications.internal",
+        "services",
+        "settings",
+        "system"
+    ]
+}
+
