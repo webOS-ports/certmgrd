@@ -1,0 +1,4 @@
+{
+ "allowedNames": ["org.webosports.service.certmgr"],
+ "certmgr-service.operation": ["dev"]
+}
