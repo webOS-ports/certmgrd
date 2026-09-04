@@ -16,7 +16,7 @@
 #
 # LICENSE@@@
 
-cmake_minimum_required(VERSION 2.8.7)
+cmake_minimum_required(VERSION 3.10)
 
 project(certmgrd C)
 
@@ -48,7 +48,7 @@ webos_add_compiler_flags(ALL ${PBNJSON_C_CFLAGS_OTHER})
 
 pkg_check_modules(PMCERTMGR REQUIRED PmCertificateMgr)
 include_directories(${PMCERTMGR_INCLUDE_DIRS})
-webos_add_compiler_flags(ALL ${PMCERTMGR_C_CFLAGS_OTHER})
+webos_add_compiler_flags(ALL ${PMCERTMGR_CFLAGS_OTHER})
 
 file(GLOB SOURCE_FILES src/main.c src/certmgr_service.c src/luna_service_utils.c)
 
@@ -58,7 +58,7 @@ webos_add_linker_options(ALL --no-undefined)
 add_executable(certmgrd ${SOURCE_FILES})
 target_link_libraries(certmgrd
     ${GLIB2_LDFLAGS} ${LUNASERVICE2_LDFLAGS} ${PBNJSON_C_LDFLAGS}
-    ${GIO2_LDFLAGS} ${GIO-UNIX_LDFLAGS} ${GOBJECT2_LDFLAGS}
+    ${GIO2_LDFLAGS} ${GIO-UNIX_LDFLAGS}
     ${PMCERTMGR_LDFLAGS})
 
 webos_build_daemon()

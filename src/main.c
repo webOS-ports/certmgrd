@@ -25,7 +25,6 @@
 
 #include <luna-service2/lunaservice.h>
 #include <glib.h>
-#include <glib-object.h>
 
 #include "certmgr_service.h"
 
@@ -36,7 +35,7 @@ GMainLoop *event_loop;
 static gboolean option_detach = FALSE;
 static gboolean option_version = FALSE;
 static gboolean option_debug = FALSE;
-static unsigned int __terminated = 0;
+static unsigned int terminated = 0;
 
 static GOptionEntry options[] = {
 	{ "nodetach", 'n', G_OPTION_FLAG_REVERSE,
@@ -75,13 +74,13 @@ static gboolean signal_handler(GIOChannel *channel, GIOCondition cond,
 	switch (si.ssi_signo) {
 	case SIGINT:
 	case SIGTERM:
-		if (__terminated == 0) {
+		if (terminated == 0) {
 			g_message("Terminating");
 			g_timeout_add_seconds(SHUTDOWN_GRACE_SECONDS,
 						quit_eventloop, NULL);
 		}
 
-		__terminated = 1;
+		terminated = 1;
 		break;
 	}
 
@@ -181,7 +180,8 @@ int main(int argc, char **argv)
 	g_main_loop_run(event_loop);
 
 exit:
-	g_source_remove(signal);
+	if (signal > 0)
+		g_source_remove(signal);
 
 	if (service)
 		certmgr_service_free(service);

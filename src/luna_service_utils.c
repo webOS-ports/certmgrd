@@ -16,6 +16,8 @@
 *
 * LICENSE@@@ */
 
+#include <string.h>
+
 #include "luna_service_utils.h"
 
 void luna_service_message_reply_custom_error(LSHandle *handle, LSMessage *message, const char *error_text)
@@ -112,14 +114,17 @@ char* luna_service_message_get_string(jvalue_ref parsed_obj, const char *name, c
 {
 	jvalue_ref string_obj = NULL;
 	raw_buffer string_buf;
+	char *value;
 
 	if (!jobject_get_exists(parsed_obj, j_str_to_buffer(name, strlen(name)), &string_obj) ||
 		!jis_string(string_obj))
 		return g_strdup(default_value);
 
 	string_buf = jstring_get(string_obj);
+	value = g_strdup(string_buf.m_str);
+	jstring_free_buffer(string_buf);
 
-	return g_strdup(string_buf.m_str);
+	return value;
 }
 
 int luna_service_message_get_int(jvalue_ref parsed_obj, const char *name, int default_value)
