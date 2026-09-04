@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
+#include <limits.h>
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -100,6 +101,8 @@ static const char* status_value_to_str(char status)
 static bool list_all_cb(LSHandle *handle, LSMessage *message, void *user_data)
 {
 	int count = 0, ret, n, num;
+	long parsed;
+	char *endp;
 	char path[MAX_CERT_PATH];
 	char serial[128];
 	char status[8];
@@ -132,9 +135,20 @@ static bool list_all_cb(LSHandle *handle, LSMessage *message, void *user_data)
 		if (ret != 0)
 			continue;
 
-		num = atoi(serial);
-		if (num <= 0)
+		/* The database stores serial numbers in hex ("0001" ... "000A"),
+		 * and every reader in PmCertificateMgr parses them with
+		 * sscanf("%x"). atoi() read them as decimal, so "000A" came back
+		 * as 0 and was skipped, and "0010" came back as 10 and pointed at
+		 * the wrong certificate. Over a full CA bundle that silently drops
+		 * about a third of the entries from the listing. */
+		errno = 0;
+		endp = NULL;
+		parsed = strtol(serial, &endp, 16);
+		if ((0 != errno) || (endp == serial) || (parsed <= 0) ||
+			(parsed > INT_MAX))
 			continue;
+
+		num = (int)parsed;
 
 		ret = makePathToCert(num, path, MAX_CERT_PATH);
 		if (ret != 0)
