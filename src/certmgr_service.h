@@ -21,7 +21,7 @@
 
 struct certmgr_service;
 
-struct certmgr_service* certmgr_service_create();
+struct certmgr_service* certmgr_service_create(void);
 void certmgr_service_free(struct certmgr_service *service);
 
 #endif

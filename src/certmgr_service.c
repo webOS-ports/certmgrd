@@ -61,7 +61,7 @@ static LSMethod certmgr_service_methods[]  = {
 	{ NULL, NULL }
 };
 
-const char* status_value_to_str(char status)
+static const char* status_value_to_str(char status)
 {
 	switch (status) {
 	case 'c':
@@ -81,7 +81,7 @@ const char* status_value_to_str(char status)
 	case 'S':
 		return "suspended";
 	case 'T':
-		return "trusted-cient-ca";
+		return "trusted-client-ca";
 	case 'V':
 		return "valid-cert";
 	case 'u':
@@ -102,6 +102,7 @@ static bool list_all_cb(LSHandle *handle, LSMessage *message, void *user_data)
 	int count = 0, ret, n, num;
 	char path[MAX_CERT_PATH];
 	char serial[128];
+	char status[8];
 	char property_start[64] = { 0 };
 	char property_expiration[64] = { 0 };
 	char property_issuer[64] = { 0 };
@@ -111,10 +112,10 @@ static bool list_all_cb(LSHandle *handle, LSMessage *message, void *user_data)
 	char property_subject_surname[64] = { 0 };
 	char property_subject_organization_unit[64] = { 0 };
 	char property_issuer_organization_unit[64] = { 0 };
-	X509 *cert = 0;
-	jvalue_ref reply_obj;
-	jvalue_ref certs_obj;
-	jvalue_ref cert_obj;
+	X509 *cert = NULL;
+	jvalue_ref reply_obj = NULL;
+	jvalue_ref certs_obj = NULL;
+	jvalue_ref cert_obj = NULL;
 
 	ret = CertGetDatabaseInfo(CERT_DATABASE_SIZE, &count);
 	if (ret != 0) {
@@ -124,11 +125,16 @@ static bool list_all_cb(LSHandle *handle, LSMessage *message, void *user_data)
 
 	reply_obj = jobject_create();
 
-	certs_obj = jarray_create(0);
+	certs_obj = jarray_create(NULL);
 
 	for (n = 0; n < count; n++) {
-		ret = CertGetDatabaseStrValue(n, CERT_DATABASE_ITEM_SERIAL, serial, 128);
+		ret = CertGetDatabaseStrValue(n, CERT_DATABASE_ITEM_SERIAL, serial, sizeof(serial));
+		if (ret != 0)
+			continue;
+
 		num = atoi(serial);
+		if (num <= 0)
+			continue;
 
 		ret = makePathToCert(num, path, MAX_CERT_PATH);
 		if (ret != 0)
@@ -141,6 +147,10 @@ static bool list_all_cb(LSHandle *handle, LSMessage *message, void *user_data)
 		cert_obj = jobject_create();
 
 		jobject_put(cert_obj, J_CSTR_TO_JVAL("serial"), jnumber_create_i32(num));
+
+		if (CertGetDatabaseStrValue(n, CERT_DATABASE_ITEM_STATUS, status, sizeof(status)) == 0)
+			jobject_put(cert_obj, J_CSTR_TO_JVAL("status"),
+						jstring_create(status_value_to_str(status[0])));
 
 		CertX509ReadTimeProperty(cert, CERTX509_START_DATE, property_start, 64);
 		jobject_put(cert_obj, J_CSTR_TO_JVAL("start"), jstring_create(property_start));
@@ -170,16 +180,18 @@ static bool list_all_cb(LSHandle *handle, LSMessage *message, void *user_data)
 		jobject_put(cert_obj, J_CSTR_TO_JVAL("issuerOrganizationUnit"), jstring_create(property_issuer_organization_unit));
 
 		jarray_append(certs_obj, cert_obj);
+
+		X509_free(cert);
+		cert = NULL;
 	}
 
 	jobject_put(reply_obj, J_CSTR_TO_JVAL("certificates"), certs_obj);
 	jobject_put(reply_obj, J_CSTR_TO_JVAL("returnValue"), jboolean_create(true));
 
-	if (!luna_service_message_validate_and_send(handle, message, reply_obj))
-		goto cleanup;
+	luna_service_message_validate_and_send(handle, message, reply_obj);
 
 cleanup:
-	if (!jis_null(reply_obj))
+	if (reply_obj)
 		j_release(&reply_obj);
 
 	return true;
@@ -188,8 +200,8 @@ cleanup:
 static bool install_cb(LSHandle *handle, LSMessage *message, void *user_data)
 {
 	const char *payload;
-	jvalue_ref parsed_obj;
-	char *path, *passphrase;
+	jvalue_ref parsed_obj = NULL;
+	char *path = NULL, *passphrase = NULL;
 	int ret, serial;
 
 	payload = LSMessageGetPayload(message);
@@ -227,7 +239,10 @@ static bool install_cb(LSHandle *handle, LSMessage *message, void *user_data)
 	luna_service_message_reply_success(handle, message);
 
 cleanup:
-	if (!jis_null(parsed_obj))
+	g_free(path);
+	g_free(passphrase);
+
+	if (parsed_obj)
 		j_release(&parsed_obj);
 
 	return true;
@@ -236,7 +251,7 @@ cleanup:
 static bool remove_cb(LSHandle *handle, LSMessage *message, void *user_data)
 {
 	const char *payload;
-	jvalue_ref parsed_obj;
+	jvalue_ref parsed_obj = NULL;
 	int ret, serial;
 
 	payload = LSMessageGetPayload(message);
@@ -262,13 +277,13 @@ static bool remove_cb(LSHandle *handle, LSMessage *message, void *user_data)
 	luna_service_message_reply_success(handle, message);
 
 cleanup:
-	if (!jis_null(parsed_obj))
+	if (parsed_obj)
 		j_release(&parsed_obj);
 
 	return true;
 }
 
-struct certmgr_service* certmgr_service_create()
+struct certmgr_service* certmgr_service_create(void)
 {
 	struct certmgr_service *service;
 	LSError error;
@@ -294,7 +309,7 @@ struct certmgr_service* certmgr_service_create()
 	}
 
 	if (!LSCategorySetData(service->handle, "/", service, &error)) {
-		g_warning("Could not set daa for service category: %s", error.message);
+		g_warning("Could not set data for service category: %s", error.message);
 		LSErrorFree(&error);
 		goto error;
 	}
@@ -330,7 +345,7 @@ void certmgr_service_free(struct certmgr_service *service)
 
 	LSErrorInit(&error);
 
-	if (service->handle != NULL && LSUnregister(service->handle, &error) < 0) {
+	if (service->handle != NULL && !LSUnregister(service->handle, &error)) {
 		g_warning("Could not unregister service: %s", error.message);
 		LSErrorFree(&error);
 	}

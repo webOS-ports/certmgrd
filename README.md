@@ -27,7 +27,7 @@ How to Build on Linux
 ## Dependencies
 
 Below are the tools and libraries (and their minimum versions) required to build
-telephonyd:
+certmgrd:
 
 * cmake (version required by openwebos/cmake-modules-webos)
 * gcc 4.6.3

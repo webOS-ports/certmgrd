@@ -36,6 +36,7 @@ bool luna_service_check_for_subscription_and_process(LSHandle *handle, LSMessage
 void luna_service_post_subscription(LSHandle *handle, const char *path, const char *method, jvalue_ref reply_obj);
 bool luna_service_message_get_boolean(jvalue_ref parsed_obj, const char *name, bool default_value);
 char* luna_service_message_get_string(jvalue_ref parsed_obj, const char *name, const char *default_value);
+int luna_service_message_get_int(jvalue_ref parsed_obj, const char *name, int default_value);
 
 #endif
 
