@@ -50,6 +50,10 @@ pkg_check_modules(PMCERTMGR REQUIRED PmCertificateMgr)
 include_directories(${PMCERTMGR_INCLUDE_DIRS})
 webos_add_compiler_flags(ALL ${PMCERTMGR_CFLAGS_OTHER})
 
+pkg_check_modules(LIBCRYPTO REQUIRED libcrypto)
+include_directories(${LIBCRYPTO_INCLUDE_DIRS})
+webos_add_compiler_flags(ALL ${LIBCRYPTO_CFLAGS_OTHER})
+
 file(GLOB SOURCE_FILES src/main.c src/certmgr_service.c src/luna_service_utils.c)
 
 webos_add_compiler_flags(ALL -Wall)
@@ -59,7 +63,7 @@ add_executable(certmgrd ${SOURCE_FILES})
 target_link_libraries(certmgrd
     ${GLIB2_LDFLAGS} ${LUNASERVICE2_LDFLAGS} ${PBNJSON_C_LDFLAGS}
     ${GIO2_LDFLAGS} ${GIO-UNIX_LDFLAGS}
-    ${PMCERTMGR_LDFLAGS})
+    ${PMCERTMGR_LDFLAGS} ${LIBCRYPTO_LDFLAGS})
 
 webos_build_daemon()
 webos_build_system_bus_files()
